@@ -9,22 +9,24 @@ export class CommandRunnerService {
     id: number,
     options?: { cwd?: string },
   ) {
-    return new Promise<void>((resolve, reject) => {
-      const process = spawn(cmd, args, options);
+    const child = spawn(cmd, args, options);
 
-      process.stdout.on('data', (chunk) => {
-        console.log(`[${id} STDOUT] ${chunk.toString()}`);
-      });
-
-      process.stderr.on('data', (chunk) => {
-        console.log(`[${id} STDERR ${cmd}] ${chunk.toString()}`);
-      });
-
-      process.on('close', (code) => {
+    const promise = new Promise<void>((resolve, reject) => {
+      child.on('close', (code) => {
         console.log(`[${id}] process exited with code:`, code);
         if (code === 0) return resolve();
         reject(new Error(`${cmd} failed`));
       });
     });
+
+    child.stdout.on('data', (chunk) => {
+      console.log(`[${id} STDOUT] ${chunk.toString()}`);
+    });
+
+    child.stderr.on('data', (chunk) => {
+      console.log(`[${id} STDERR ${cmd}] ${chunk.toString()}`);
+    });
+
+    return { process: child, promise };
   }
 }
