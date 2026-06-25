@@ -56,6 +56,7 @@ export class DeploymentPipelineService {
           }
         }
       });
+      await railpack.promise;
 
       if (!imageTag) {
         throw new Error('Image tag not produced by Railpack');
@@ -64,11 +65,13 @@ export class DeploymentPipelineService {
       // DEPLOYING
       await this.update(id, DeploymentStatus.DEPLOYING);
 
-      this.runner.runCommand(
+      const docker = this.runner.runCommand(
         'docker',
         ['run', '-d', '-p', `${port}:3000`, imageTag],
         id,
       );
+
+      await docker.promise;
 
       const liveUrl = `http://localhost:${port}`;
 
